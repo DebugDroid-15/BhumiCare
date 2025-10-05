@@ -5,29 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Agronomist — Full Pro Gauge Dashboard</title>
 
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- CanvasGauge and Chart.js via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDb7wkZWmXUqslNzykMRhcp-WcYu1Lrj3E",
-  authDomain: "bhumicare-b6713.firebaseapp.com",
-  projectId: "bhumicare-b6713",
-  storageBucket: "bhumicare-b6713.firebasestorage.app",
-  messagingSenderId: "831263912315",
-  appId: "1:831263912315:web:cf22af52e3f8ad58c14dde",
-  measurementId: "G-MF1C9NQNZ0",
-  databaseURL: "https://bhumicare-b6713-default-rtdb.firebaseio.com/"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-window.db = db;
-</script>
 
 <style>
 body { margin:0; font-family:'Poppins',sans-serif; background:#f0f4f8; color:#1b5e20; }
@@ -43,112 +26,127 @@ select { padding:8px 12px; font-size:14px; border-radius:8px; border:1px solid #
 .map-container { margin:20px auto; max-width:1200px; height:420px; border-radius:12px; overflow:hidden; }
 @media(max-width:640px){ .gauges { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); } }
 </style>
+
 </head>
 <body>
 
 <header>🌱 Smart Agronomist — Full Pro Gauge Dashboard</header>
 
 <div class="controls">
-<label for="cropSelect">Select Crop: </label>
-<select id="cropSelect">
-<option>Rice</option><option>Wheat</option><option>Maize</option><option>Sugarcane</option><option>Cotton</option>
-<option>Barley</option><option>Sorghum</option><option>Pearl Millet</option><option>Finger Millet</option><option>Oats</option>
-</select>
+  <label for="cropSelect">Select Crop: </label>
+  <select id="cropSelect">
+    <option>Rice</option>
+    <option>Wheat</option>
+    <option>Maize</option>
+    <option>Sugarcane</option>
+    <option>Cotton</option>
+    <option>Barley</option>
+    <option>Sorghum</option>
+    <option>Pearl Millet</option>
+    <option>Finger Millet</option>
+    <option>Oats</option>
+  </select>
 </div>
 
 <div class="gauges">
-<!-- All gauges with alerts -->
-<div class="gauge-card"><h3>Soil Moisture (%)</h3><span class="alert" id="soilMoistureAlert">⚠️</span><canvas id="soilMoistureGauge"></canvas></div>
-<div class="gauge-card"><h3>Temperature (°C)</h3><span class="alert" id="temperatureAlert">⚠️</span><canvas id="temperatureGauge"></canvas></div>
-<div class="gauge-card"><h3>Humidity (%)</h3><span class="alert" id="humidityAlert">⚠️</span><canvas id="humidityGauge"></canvas></div>
-<div class="gauge-card"><h3>EC (dS/m)</h3><canvas id="ecGauge"></canvas></div>
-<div class="gauge-card"><h3>pH Level</h3><canvas id="phGauge"></canvas></div>
-<div class="gauge-card"><h3>Fertility Index</h3><canvas id="fertilityGauge"></canvas></div>
-<div class="gauge-card"><h3>N (ppm)</h3><canvas id="nGauge"></canvas></div>
-<div class="gauge-card"><h3>P (ppm)</h3><canvas id="pGauge"></canvas></div>
-<div class="gauge-card"><h3>K (ppm)</h3><canvas id="kGauge"></canvas></div>
-<div class="gauge-card"><h3>TDS (ppm)</h3><canvas id="tdsGauge"></canvas></div>
-<div class="gauge-card"><h3>Salinity Index</h3><canvas id="salinityGauge"></canvas></div>
-<div class="gauge-card"><h3>Moisture Stress</h3><canvas id="moistureStressGauge"></canvas></div>
-<div class="gauge-card"><h3>Temperature Stress</h3><canvas id="tempStressGauge"></canvas></div>
-<div class="gauge-card"><h3>Soil Organic Proxy (%)</h3><canvas id="soilOrganicGauge"></canvas></div>
-<div class="gauge-card"><h3>DHT Temp (°C)</h3><canvas id="dhtTempGauge"></canvas></div>
-<div class="gauge-card"><h3>DHT Humidity (%)</h3><canvas id="dhtHumidityGauge"></canvas></div>
-<div class="gauge-card"><h3>MQ2 Gas (ppm)</h3><canvas id="mq2Gauge"></canvas></div>
-<div class="gauge-card"><h3>LDR Light (lux)</h3><canvas id="ldrGauge"></canvas></div>
+  <div class="gauge-card"><h3>Soil Moisture (%)</h3><span class="alert" id="soilMoistureAlert">⚠️</span><canvas id="soilMoistureGauge"></canvas></div>
+  <div class="gauge-card"><h3>Temperature (°C)</h3><span class="alert" id="temperatureAlert">⚠️</span><canvas id="temperatureGauge"></canvas></div>
+  <div class="gauge-card"><h3>Humidity (%)</h3><span class="alert" id="humidityAlert">⚠️</span><canvas id="humidityGauge"></canvas></div>
+  <div class="gauge-card"><h3>EC (dS/m)</h3><canvas id="ecGauge"></canvas></div>
+  <div class="gauge-card"><h3>pH Level</h3><canvas id="phGauge"></canvas></div>
+  <div class="gauge-card"><h3>Fertility Index</h3><canvas id="fertilityGauge"></canvas></div>
+  <div class="gauge-card"><h3>N (ppm)</h3><canvas id="nGauge"></canvas></div>
+  <div class="gauge-card"><h3>P (ppm)</h3><canvas id="pGauge"></canvas></div>
+  <div class="gauge-card"><h3>K (ppm)</h3><canvas id="kGauge"></canvas></div>
+  <div class="gauge-card"><h3>TDS (ppm)</h3><canvas id="tdsGauge"></canvas></div>
+  <div class="gauge-card"><h3>Salinity Index</h3><canvas id="salinityGauge"></canvas></div>
+  <div class="gauge-card"><h3>Moisture Stress</h3><canvas id="moistureStressGauge"></canvas></div>
+  <div class="gauge-card"><h3>Temperature Stress</h3><canvas id="tempStressGauge"></canvas></div>
+  <div class="gauge-card"><h3>Soil Organic Proxy (%)</h3><canvas id="soilOrganicGauge"></canvas></div>
+  <div class="gauge-card"><h3>DHT Temp (°C)</h3><canvas id="dhtTempGauge"></canvas></div>
+  <div class="gauge-card"><h3>DHT Humidity (%)</h3><canvas id="dhtHumidityGauge"></canvas></div>
+  <div class="gauge-card"><h3>MQ2 Gas (ppm)</h3><canvas id="mq2Gauge"></canvas></div>
+  <div class="gauge-card"><h3>LDR Light (lux)</h3><canvas id="ldrGauge"></canvas></div>
 </div>
 
 <div class="sparklines">
-<div class="sparkline-card"><h4>Soil Moisture Trend</h4><canvas id="smTrend"></canvas></div>
-<div class="sparkline-card"><h4>Temperature Trend</h4><canvas id="tTrend"></canvas></div>
-<div class="sparkline-card"><h4>Fertility Index Trend</h4><canvas id="fiTrend"></canvas></div>
+  <div class="sparkline-card"><h4>Soil Moisture Trend</h4><canvas id="smTrend"></canvas></div>
+  <div class="sparkline-card"><h4>Temperature Trend</h4><canvas id="tTrend"></canvas></div>
+  <div class="sparkline-card"><h4>Fertility Index Trend</h4><canvas id="fiTrend"></canvas></div>
 </div>
 
 <div class="map-container">
-<iframe id="fieldMap" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=Bengaluru,India&z=10&output=embed" title="Field Location"></iframe>
+  <iframe id="fieldMap" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=Bengaluru,India&z=10&output=embed" title="Field Location"></iframe>
 </div>
 
-<script>
-const gaugeOptions=(min,max,units)=>({renderTo:null,width:180,height:180,units:units,minValue:min,maxValue:max,
-majorTicks:[min,(min+max)/2,max],minorTicks:5,strokeTicks:true,
-highlights:[{from:min,to:(min+max)/3,color:'#d32f2f'},{from:(min+max)/3,to:2*(min+max)/3,color:'#fbc02d'},{from:2*(min+max)/3,to:max,color:'#4caf50'}],
-colorPlate:'#f5f5f5',colorMajorTicks:'#1b5e20',colorMinorTicks:'#607d8b',colorNumbers:'#1b5e20',
-colorNeedle:'#d32f2f',colorNeedleEnd:'#d32f2f',animationDuration:500,animationRule:'linear'});
+<script type="module">
+  // Import Firebase config
+  import { app, db } from './firebase-config.js';
+  import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-const gauges = {
-  soilMoisture:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('soilMoistureGauge')}).draw(),
-  temperature:new RadialGauge({...gaugeOptions(0,50,'°C'),renderTo:document.getElementById('temperatureGauge')}).draw(),
-  humidity:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('humidityGauge')}).draw(),
-  ec:new RadialGauge({...gaugeOptions(0,5,'dS/m'),renderTo:document.getElementById('ecGauge')}).draw(),
-  ph:new RadialGauge({...gaugeOptions(0,14,'pH'),renderTo:document.getElementById('phGauge')}).draw(),
-  fertility:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('fertilityGauge')}).draw(),
-  N:new RadialGauge({...gaugeOptions(0,200,'ppm'),renderTo:document.getElementById('nGauge')}).draw(),
-  P:new RadialGauge({...gaugeOptions(0,100,'ppm'),renderTo:document.getElementById('pGauge')}).draw(),
-  K:new RadialGauge({...gaugeOptions(0,100,'ppm'),renderTo:document.getElementById('kGauge')}).draw(),
-  TDS:new RadialGauge({...gaugeOptions(0,1000,'ppm'),renderTo:document.getElementById('tdsGauge')}).draw(),
-  salinity:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('salinityGauge')}).draw(),
-  moistureStress:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('moistureStressGauge')}).draw(),
-  tempStress:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('tempStressGauge')}).draw(),
-  soilOrganic:new RadialGauge({...gaugeOptions(0,10,'%'),renderTo:document.getElementById('soilOrganicGauge')}).draw(),
-  dhtTemp:new RadialGauge({...gaugeOptions(0,50,'°C'),renderTo:document.getElementById('dhtTempGauge')}).draw(),
-  dhtHumidity:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('dhtHumidityGauge')}).draw(),
-  mq2:new RadialGauge({...gaugeOptions(0,500,'ppm'),renderTo:document.getElementById('mq2Gauge')}).draw(),
-  ldr:new RadialGauge({...gaugeOptions(0,1000,'lux'),renderTo:document.getElementById('ldrGauge')}).draw()
-};
+  // Gauge options helper
+  const gaugeOptions=(min,max,units)=>({renderTo:null,width:180,height:180,units:units,minValue:min,maxValue:max,
+    majorTicks:[min,(min+max)/2,max],minorTicks:5,strokeTicks:true,
+    highlights:[{from:min,to:(min+max)/3,color:'#d32f2f'},{from:(min+max)/3,to:2*(min+max)/3,color:'#fbc02d'},{from:2*(min+max)/3,to:max,color:'#4caf50'}],
+    colorPlate:'#f5f5f5',colorMajorTicks:'#1b5e20',colorMinorTicks:'#607d8b',colorNumbers:'#1b5e20',
+    colorNeedle:'#d32f2f',colorNeedleEnd:'#d32f2f',animationDuration:500,animationRule:'linear'});
 
-const checkAlert=(value,minSafe,maxSafe,alertId)=>{document.getElementById(alertId)?.style.display=(value<minSafe||value>maxSafe)?'inline':'none';};
+  // Initialize all gauges
+  const gauges = {
+    soilMoisture:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('soilMoistureGauge')}).draw(),
+    temperature:new RadialGauge({...gaugeOptions(0,50,'°C'),renderTo:document.getElementById('temperatureGauge')}).draw(),
+    humidity:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('humidityGauge')}).draw(),
+    ec:new RadialGauge({...gaugeOptions(0,5,'dS/m'),renderTo:document.getElementById('ecGauge')}).draw(),
+    ph:new RadialGauge({...gaugeOptions(0,14,'pH'),renderTo:document.getElementById('phGauge')}).draw(),
+    fertility:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('fertilityGauge')}).draw(),
+    N:new RadialGauge({...gaugeOptions(0,200,'ppm'),renderTo:document.getElementById('nGauge')}).draw(),
+    P:new RadialGauge({...gaugeOptions(0,100,'ppm'),renderTo:document.getElementById('pGauge')}).draw(),
+    K:new RadialGauge({...gaugeOptions(0,100,'ppm'),renderTo:document.getElementById('kGauge')}).draw(),
+    TDS:new RadialGauge({...gaugeOptions(0,1000,'ppm'),renderTo:document.getElementById('tdsGauge')}).draw(),
+    salinity:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('salinityGauge')}).draw(),
+    moistureStress:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('moistureStressGauge')}).draw(),
+    tempStress:new RadialGauge({...gaugeOptions(0,100,'Index'),renderTo:document.getElementById('tempStressGauge')}).draw(),
+    soilOrganic:new RadialGauge({...gaugeOptions(0,10,'%'),renderTo:document.getElementById('soilOrganicGauge')}).draw(),
+    dhtTemp:new RadialGauge({...gaugeOptions(0,50,'°C'),renderTo:document.getElementById('dhtTempGauge')}).draw(),
+    dhtHumidity:new RadialGauge({...gaugeOptions(0,100,'%'),renderTo:document.getElementById('dhtHumidityGauge')}).draw(),
+    mq2:new RadialGauge({...gaugeOptions(0,500,'ppm'),renderTo:document.getElementById('mq2Gauge')}).draw(),
+    ldr:new RadialGauge({...gaugeOptions(0,1000,'lux'),renderTo:document.getElementById('ldrGauge')}).draw()
+  };
 
-const db = window.db;
-const sensorsRef = ref(db,'sensors');
-onValue(sensorsRef,snapshot=>{
-  const data=snapshot.val(); if(!data) return;
-  if(data.soilMoisture!=null){ gauges.soilMoisture.value=data.soilMoisture; checkAlert(data.soilMoisture,30,70,'soilMoistureAlert'); }
-  if(data.temperature!=null){ gauges.temperature.value=data.temperature; checkAlert(data.temperature,15,35,'temperatureAlert'); }
-  if(data.humidity!=null){ gauges.humidity.value=data.humidity; checkAlert(data.humidity,30,80,'humidityAlert'); }
-  if(data.ec!=null) gauges.ec.value=data.ec;
-  if(data.ph!=null) gauges.ph.value=data.ph;
-  if(data.fertilityIndex!=null) gauges.fertility.value=data.fertilityIndex;
-  if(data.N!=null) gauges.N.value=data.N;
-  if(data.P!=null) gauges.P.value=data.P;
-  if(data.K!=null) gauges.K.value=data.K;
-  if(data.TDS!=null) gauges.TDS.value=data.TDS;
-  if(data.salinity!=null) gauges.salinity.value=data.salinity;
-  if(data.moistureStress!=null) gauges.moistureStress.value=data.moistureStress;
-  if(data.tempStress!=null) gauges.tempStress.value=data.tempStress;
-  if(data.soilOrganic!=null) gauges.soilOrganic.value=data.soilOrganic;
-  if(data.dhtTemp!=null) gauges.dhtTemp.value=data.dhtTemp;
-  if(data.dhtHumidity!=null) gauges.dhtHumidity.value=data.dhtHumidity;
-  if(data.mq2!=null) gauges.mq2.value=data.mq2;
-  if(data.ldr!=null) gauges.ldr.value=data.ldr;
-});
+  const checkAlert=(value,minSafe,maxSafe,alertId)=>{document.getElementById(alertId)?.style.display=(value<minSafe||value>maxSafe)?'inline':'none';};
 
-// Sparklines
-const createSparkline=(id,label,color)=>new Chart(document.getElementById(id),{type:'line',
-data:{labels:[...Array(8).keys()],datasets:[{label:label,data:Array(8).fill(0),borderColor:color,fill:false,tension:0.3}]},
-options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:true}}}});
-const smTrend=createSparkline('smTrend','Soil Moisture','#4caf50');
-const tTrend=createSparkline('tTrend','Temperature','#fbc02d');
-const fiTrend=createSparkline('fiTrend','Fertility','#1b5e20');
+  // Firebase real-time updates
+  const sensorsRef = ref(db,'sensors');
+  onValue(sensorsRef,snapshot=>{
+    const data=snapshot.val(); if(!data)return;
+    if(data.soilMoisture!=null){ gauges.soilMoisture.value=data.soilMoisture; checkAlert(data.soilMoisture,30,70,'soilMoistureAlert'); }
+    if(data.temperature!=null){ gauges.temperature.value=data.temperature; checkAlert(data.temperature,15,35,'temperatureAlert'); }
+    if(data.humidity!=null){ gauges.humidity.value=data.humidity; checkAlert(data.humidity,30,80,'humidityAlert'); }
+    if(data.ec!=null) gauges.ec.value=data.ec;
+    if(data.ph!=null) gauges.ph.value=data.ph;
+    if(data.fertilityIndex!=null) gauges.fertility.value=data.fertilityIndex;
+    if(data.N!=null) gauges.N.value=data.N;
+    if(data.P!=null) gauges.P.value=data.P;
+    if(data.K!=null) gauges.K.value=data.K;
+    if(data.TDS!=null) gauges.TDS.value=data.TDS;
+    if(data.salinity!=null) gauges.salinity.value=data.salinity;
+    if(data.moistureStress!=null) gauges.moistureStress.value=data.moistureStress;
+    if(data.tempStress!=null) gauges.tempStress.value=data.tempStress;
+    if(data.soilOrganic!=null) gauges.soilOrganic.value=data.soilOrganic;
+    if(data.dhtTemp!=null) gauges.dhtTemp.value=data.dhtTemp;
+    if(data.dhtHumidity!=null) gauges.dhtHumidity.value=data.dhtHumidity;
+    if(data.mq2!=null) gauges.mq2.value=data.mq2;
+    if(data.ldr!=null) gauges.ldr.value=data.ldr;
+  });
+
+  // Sparklines
+  const createSparkline=(id,label,color)=>new Chart(document.getElementById(id),{type:'line',
+    data:{labels:[...Array(8).keys()],datasets:[{label:label,data:Array(8).fill(0),borderColor:color,fill:false,tension:0.3}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:true}}}});
+  const smTrend=createSparkline('smTrend','Soil Moisture','#4caf50');
+  const tTrend=createSparkline('tTrend','Temperature','#fbc02d');
+  const fiTrend=createSparkline('fiTrend','Fertility','#1b5e20');
 </script>
+
 </body>
 </html>
