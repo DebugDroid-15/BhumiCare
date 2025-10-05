@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crop Monitoring Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #4CAF50;
+      --green-dark: #2e7d32;
+      --red: #d32f2f;
+      --bg: #F5F5F5;
+      --card: #FFFFFF;
+      --muted: #607d8b;
+      --shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --radius: 14px;
+      --gap: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: #1f2937;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+      color: #1b5e20;
+      letter-spacing: 0.2px;
+    }
+    .subtitle { color: var(--muted); font-size: 13px; }
+
+    /* Cards grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--gap);
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 14px 12px;
+      box-shadow: var(--shadow);
+      border: 1px solid #eef2f3;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 4px;
+      background: linear-gradient(90deg, #e8f5e9, #e0f2f1);
+    }
+    .label { font-size: 12px; color: var(--muted); }
+    .value { font-size: 22px; font-weight: 700; margin-top: 6px; }
+    .delta { font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .delta.positive { color: var(--green-dark); }
+    .delta.negative { color: var(--red); }
+
+    /* Sections */
+    .section-title {
+      margin: 28px 0 10px;
+      font-size: 14px;
+      color: #0f5132;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .section-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--green);
+      display: inline-block;
+    }
+
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid #eef2f3;
+      padding: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: minmax(200px, 320px) 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #e1e5e8;
+      background: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .reco-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--gap);
+      margin-top: 8px;
+    }
+
+    .reco-item { background: #fafdfb; border-radius: 12px; padding: 12px; border: 1px dashed #c8e6c9; }
+    .reco-item h4 { margin: 0 0 6px; font-size: 13px; color: #2e7d32; }
+    .reco-value { font-weight: 700; font-size: 16px; }
+
+    .bullets { margin: 10px 0 0; padding-left: 18px; color: #37474f; }
+    .bullets li { margin: 6px 0; font-size: 13px; }
+
+    /* Trends */
+    .trend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--gap);
+    }
+    .trend-card { padding: 12px; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); border: 1px solid #eef2f3; }
+    .trend-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .trend-title { font-size: 12px; color: var(--muted); }
+    .trend-val { font-size: 18px; font-weight: 700; }
+    .trend-delta { font-size: 12px; font-weight: 600; }
+    .trend-delta.positive { color: var(--green-dark); }
+    .trend-delta.negative { color: var(--red); }
+    canvas.sparkline { width: 100%; height: 64px; display: block; margin-top: 8px; }
+
+    /* Map */
+    .map-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid #eef2f3; overflow: hidden; }
+    .map-card iframe { width: 100%; height: 420px; border: 0; display: block; }
+
+    /* Responsive tweaks */
+    @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Crop Monitoring Dashboard</h1>
+      <span class="subtitle">Real-time field telemetry & insights</span>
+    </header>
+
+    <!-- Top metrics cards -->
+    <section class="cards-grid" aria-label="Key metrics">
+      <div class="card"><div class="label">Soil Moisture</div><div class="value" id="soilMoisture">65%</div><div class="delta positive" id="soilMoistureDelta">+5%</div></div>
+      <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">28°C</div><div class="delta positive" id="temperatureDelta">+2°C</div></div>
+      <div class="card"><div class="label">Humidity</div><div class="value" id="humidity">70%</div><div class="delta negative" id="humidityDelta">-3%</div></div>
+      <div class="card"><div class="label">Electrical Conductivity</div><div class="value" id="conductivity">1.2 dS/m</div><div class="delta positive" id="conductivityDelta">+0.1 dS/m</div></div>
+      <div class="card"><div class="label">pH Level</div><div class="value" id="phLevel">6.5</div><div class="delta negative" id="phLevelDelta">-0.2</div></div>
+      <div class="card"><div class="label">NPK Values (N:P:K)</div><div class="value" id="npkValues">120:60:40</div><div class="delta positive" id="npkDelta">+10:5:2</div></div>
+      <div class="card"><div class="label">Fertility Index</div><div class="value" id="fertilityIndex">85</div><div class="delta positive" id="fertilityDelta">+5</div></div>
+      <div class="card"><div class="label">N Value</div><div class="value" id="nValue">120 ppm</div><div class="delta positive" id="nValueDelta">+10 ppm</div></div>
+      <div class="card"><div class="label">P Value</div><div class="value" id="pValue">60 ppm</div><div class="delta positive" id="pValueDelta">+5 ppm</div></div>
+      <div class="card"><div class="label">K Value</div><div class="value" id="kValue">40 ppm</div><div class="delta positive" id="kValueDelta">+2 ppm</div></div>
+      <div class="card"><div class="label">NPK Ratio</div><div class="value" id="npkRatio">2:1:1</div><div class="delta positive" id="npkRatioDelta">+0.1</div></div>
+      <div class="card"><div class="label">Moisture Stress</div><div class="value" id="moistureStress">Low</div><div class="delta negative" id="moistureStressDelta">-5%</div></div>
+      <div class="card"><div class="label">Temperature Stress</div><div class="value" id="tempStress">Low</div><div class="delta negative" id="tempStressDelta">-2%</div></div>
+      <div class="card"><div class="label">Salinity Index</div><div class="value" id="salinityIndex">1.5</div><div class="delta positive" id="salinityDelta">+0.2</div></div>
+      <div class="card"><div class="label">TDS</div><div class="value" id="tds">500 ppm</div><div class="delta positive" id="tdsDelta">+20 ppm</div></div>
+      <div class="card"><div class="label">Soil Organic Proxy</div><div class="value" id="soilOrganic">2.5%</div><div class="delta positive" id="soilOrganicDelta">+0.1%</div></div>
+      <div class="card"><div class="label">Irrigation Status</div><div class="value" id="irrigationStatus">On</div><div class="delta" id="irrigationDelta">N/A</div></div>
+      <div class="card"><div class="label">Approx pH</div><div class="value" id="approxPh">6.8</div><div class="delta" id="approxPhDelta">-</div></div>
+      <div class="card"><div class="label">DHT Temp</div><div class="value" id="dhtTemp">27°C</div><div class="delta negative" id="dhtTempDelta">-1°C</div></div>
+      <div class="card"><div class="label">DHT Humidity</div><div class="value" id="dhtHumidity">68%</div><div class="delta negative" id="dhtHumidityDelta">-2%</div></div>
+      <div class="card"><div class="label">MQ2 Gas</div><div class="value" id="mq2Gas">150 ppm</div><div class="delta positive" id="mq2Delta">+10 ppm</div></div>
+      <div class="card"><div class="label">LDR Light</div><div class="value" id="ldrLight">750 lux</div><div class="delta positive" id="ldrDelta">+50 lux</div></div>
+    </section>
+
+    <!-- Crop selection -->
+    <h3 class="section-title">Crop Selection</h3>
+    <section class="panel">
+      <div class="form-row">
+        <label for="cropSelect">Select</label>
+        <select id="cropSelect" aria-label="Crop selection">
+          <option>Rice</option>
+          <option>Wheat</option>
+          <option>Maize</option>
+          <option>Sorghum</option>
+          <option>Pearl Millet (Bajra)</option>
+          <option>Finger Millet (Ragi)</option>
+          <option>Barley</option>
+          <option>Oats</option>
+          <option>Sugarcane</option>
+          <option>Cotton</option>
+          <option>Jute</option>
+          <option>Tea</option>
+          <option>Coffee</option>
+          <option>Rubber</option>
+          <option>Coconut</option>
+          <option>Groundnut</option>
+          <option>Mustard</option>
+          <option>Soybean</option>
+          <option>Sunflower</option>
+          <option>Sesame (Til)</option>
+          <option>Castor</option>
+          <option>Linseed</option>
+          <option>Chickpea (Gram)</option>
+          <option>Pigeon Pea (Arhar/Tur)</option>
+          <option>Black Gram (Urad)</option>
+          <option>Green Gram (Moong)</option>
+          <option>Lentil (Masur)</option>
+          <option>Kidney Bean (Rajma)</option>
+          <option>Peas</option>
+          <option>Potato</option>
+          <option>Onion</option>
+          <option>Tomato</option>
+          <option>Brinjal (Eggplant)</option>
+          <option>Okra (Ladyfinger)</option>
+          <option>Cabbage</option>
+          <option>Cauliflower</option>
+          <option>Spinach</option>
+          <option>Carrot</option>
+          <option>Cucumber</option>
+          <option>Pumpkin</option>
+          <option>Bottle Gourd</option>
+          <option>Bitter Gourd</option>
+          <option>Apple</option>
+          <option>Banana</option>
+          <option>Mango</option>
+          <option>Grapes</option>
+          <option>Papaya</option>
+          <option>Pomegranate</option>
+          <option>Pineapple</option>
+          <option>Guava</option>
+        </select>
+      </div>
+
+      <div class="reco-grid">
+        <div class="reco-item">
+          <h4>Ideal Soil Moisture</h4>
+          <div class="reco-value" id="idealMoisture">60–70%</div>
+        </div>
+        <div class="reco-item">
+          <h4>Ideal Temperature</h4>
+          <div class="reco-value" id="idealTemp">25–30°C</div>
+        </div>
+        <div class="reco-item">
+          <h4>Ideal pH Range</h4>
+          <div class="reco-value" id="idealPh">6.0–7.0</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <strong style="color:#1b5e20;">Fertilizer Suggestions</strong>
+        <ul class="bullets" id="fertilizerSuggestions">
+          <li>Use a balanced fertilizer with an N:P:K ratio of 10:5:5.</li>
+          <li>Apply fertilizer at a rate of 100 kg/ha; split into two doses (at sowing and after 30 days).</li>
+          <li>Adjust application based on plant growth and leaf color; increase N if growth is slow.</li>
+          <li>Ensure proper irrigation post-application to facilitate nutrient uptake.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Historical Data Visualization -->
+    <h3 class="section-title">Historical Data Visualization</h3>
+    <section class="trend-grid" aria-label="Historical trends">
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Soil Moisture Trends</div><div class="trend-val" id="smTrendVal">62%</div></div><div class="trend-delta negative" id="smTrendDelta">-2%</div></div>
+        <canvas class="sparkline" id="smTrend" data-points="60,65,58,62,64,66,63,61"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Temperature Trends</div><div class="trend-val" id="tTrendVal">27°C</div></div><div class="trend-delta negative" id="tTrendDelta">-1°C</div></div>
+        <canvas class="sparkline" id="tTrend" data-points="28,29,27,26,27,28,27,27"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">pH Trends</div><div class="trend-val" id="phTrendVal">6.4</div></div><div class="trend-delta negative" id="phTrendDelta">-0.1</div></div>
+        <canvas class="sparkline" id="phTrend" data-points="6.6,6.5,6.5,6.4,6.4,6.5,6.3,6.4"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Fertility Index Trends</div><div class="trend-val" id="fiTrendVal">82</div></div><div class="trend-delta positive" id="fiTrendDelta">+4</div></div>
+        <canvas class="sparkline" id="fiTrend" data-points="74,78,80,81,82,84,83,82"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Nitrogen (N) Value</div><div class="trend-val" id="nTrendVal">115 ppm</div></div><div class="trend-delta positive" id="nTrendDelta">+8 ppm</div></div>
+        <canvas class="sparkline" id="nTrend" data-points="100,102,108,110,111,113,115,114"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Phosphorus (P) Value</div><div class="trend-val" id="pTrendVal">58 ppm</div></div><div class="trend-delta positive" id="pTrendDelta">+4 ppm</div></div>
+        <canvas class="sparkline" id="pTrend" data-points="52,53,54,55,56,57,58,58"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Potassium (K) Value</div><div class="trend-val" id="kTrendVal">38 ppm</div></div><div class="trend-delta positive" id="kTrendDelta">+1 ppm</div></div>
+        <canvas class="sparkline" id="kTrend" data-points="35,36,36,37,37,38,38,38"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">NPK Ratio</div><div class="trend-val" id="npkTrendVal">2:1:1</div></div><div class="trend-delta positive" id="npkTrendDelta">+0.1</div></div>
+        <canvas class="sparkline" id="npkTrend" data-points="2,2,2,2.1,2.1,2.1,2.1,2.1"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Moisture Stress</div><div class="trend-val" id="msTrendVal">Low</div></div><div class="trend-delta negative" id="msTrendDelta">-4%</div></div>
+        <canvas class="sparkline" id="msTrend" data-points="40,38,36,35,34,33,32,31"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Temperature Stress</div><div class="trend-val" id="tsTrendVal">Low</div></div><div class="trend-delta negative" id="tsTrendDelta">-1%</div></div>
+        <canvas class="sparkline" id="tsTrend" data-points="30,29,28,27,27,26,26,26"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Salinity Index</div><div class="trend-val" id="salTrendVal">1.4</div></div><div class="trend-delta positive" id="salTrendDelta">+0.1</div></div>
+        <canvas class="sparkline" id="salTrend" data-points="1.1,1.2,1.2,1.3,1.3,1.3,1.4,1.4"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">TDS</div><div class="trend-val" id="tdsTrendVal">480 ppm</div></div><div class="trend-delta positive" id="tdsTrendDelta">+18 ppm</div></div>
+        <canvas class="sparkline" id="tdsTrend" data-points="450,452,455,460,468,472,480,478"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Soil Organic Proxy</div><div class="trend-val" id="soTrendVal">2.4%</div></div><div class="trend-delta positive" id="soTrendDelta">+0.1%</div></div>
+        <canvas class="sparkline" id="soTrend" data-points="2.1,2.1,2.2,2.3,2.3,2.3,2.4,2.4"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">Approx pH</div><div class="trend-val" id="apTrendVal">6.7</div></div><div class="trend-delta positive" id="apTrendDelta">+0.1</div></div>
+        <canvas class="sparkline" id="apTrend" data-points="6.5,6.6,6.6,6.7,6.6,6.7,6.7,6.7"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">DHT Temperature</div><div class="trend-val" id="dhttTrendVal">26°C</div></div><div class="trend-delta positive" id="dhttTrendDelta">+1°C</div></div>
+        <canvas class="sparkline" id="dhttTrend" data-points="24,25,25,26,26,26,27,26"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-head"><div><div class="trend-title">DHT Humidity</div><div class="trend-val" id="dhthTrendVal">66%</div></div><div class="trend-delta negative" id="dhthTrendDelta">-1%</div></div>
+        <canvas class="sparkline" id="dhthTrend" data-points="68,67,66,67,66,66,66,66"></canvas>
+      </div>
+    </section>
+
+    <!-- Map -->
+    <h3 class="section-title">Field Location Map</h3>
+    <section class="map-card">
+      <iframe loading="lazy" allowfullscreen src="https://www.google.com/maps?q=Bengaluru,India&z=10&output=embed" title="Google Map"></iframe>
+    </section>
+  </div>
+
+  <script>
+    // Utility helpers
+    const $ = (id) => document.getElementById(id);
+    function setDelta(id, text) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text ?? '-';
+      el.classList.remove('positive', 'negative');
+      if (!text) return;
+      const t = String(text).trim();
+      if (t.startsWith('+')) el.classList.add('positive');
+      else if (t.startsWith('-')) el.classList.add('negative');
+    }
+
+    // Default sample data (can be overridden by ESP32 JSON)
+    const sampleData = {
+      soilMoisture: { value: 65, unit: '%', delta: '+5%' },
+      temperature: { value: 28, unit: '°C', delta: '+2°C' },
+      humidity: { value: 70, unit: '%', delta: '-3%' },
+      ec: { value: 1.2, unit: ' dS/m', delta: '+0.1 dS/m' },
+      ph: { value: 6.5, unit: '', delta: '-0.2' },
+      n: { value: 120, unit: ' ppm', delta: '+10 ppm' },
+      p: { value: 60, unit: ' ppm', delta: '+5 ppm' },
+      k: { value: 40, unit: ' ppm', delta: '+2 ppm' },
+      fertilityIndex: { value: 85, unit: '', delta: '+5' },
+      npkRatio: { value: '2:1:1', unit: '', delta: '+0.1' },
+      moistureStress: { value: 'Low', unit: '', delta: '-5%' },
+      tempStress: { value: 'Low', unit: '', delta: '-2%' },
+      salinity: { value: 1.5, unit: '', delta: '+0.2' },
+      tds: { value: 500, unit: ' ppm', delta: '+20 ppm' },
+      soilOrganic: { value: 2.5, unit: '%', delta: '+0.1%' },
+      irrigation: { value: 'On', unit: '', delta: 'N/A' },
+      approxPh: { value: 6.8, unit: '', delta: '-' },
+      dhtTemp: { value: 27, unit: '°C', delta: '-1°C' },
+      dhtHumidity: { value: 68, unit: '%', delta: '-2%' },
+      mq2: { value: 150, unit: ' ppm', delta: '+10 ppm' },
+      ldr: { value: 750, unit: ' lux', delta: '+50 lux' }
+    };
+
+    function updateDashboard(data) {
+      // Metrics
+      if (data.soilMoisture) { $('soilMoisture').textContent = `${data.soilMoisture.value}${data.soilMoisture.unit || ''}`; setDelta('soilMoistureDelta', data.soilMoisture.delta); }
+      if (data.temperature) { $('temperature').textContent = `${data.temperature.value}${data.temperature.unit || ''}`; setDelta('temperatureDelta', data.temperature.delta); }
+      if (data.humidity) { $('humidity').textContent = `${data.humidity.value}${data.humidity.unit || ''}`; setDelta('humidityDelta', data.humidity.delta); }
+      if (data.ec) { $('conductivity').textContent = `${data.ec.value}${data.ec.unit || ''}`; setDelta('conductivityDelta', data.ec.delta); }
+      if (data.ph) { $('phLevel').textContent = `${data.ph.value}`; setDelta('phLevelDelta', data.ph.delta); }
+
+      if (data.n && data.p && data.k) {
+        $('npkValues').textContent = `${data.n.value}:${data.p.value}:${data.k.value}`;
+        setDelta('npkDelta', `${data.n.delta?.replace(' ppm','') || 0}:${data.p.delta?.replace(' ppm','') || 0}:${data.k.delta?.replace(' ppm','') || 0}`);
+      }
+      if (data.fertilityIndex) { $('fertilityIndex').textContent = `${data.fertilityIndex.value}`; setDelta('fertilityDelta', data.fertilityIndex.delta); }
+      if (data.n) { $('nValue').textContent = `${data.n.value} ppm`; setDelta('nValueDelta', data.n.delta); }
+      if (data.p) { $('pValue').textContent = `${data.p.value} ppm`; setDelta('pValueDelta', data.p.delta); }
+      if (data.k) { $('kValue').textContent = `${data.k.value} ppm`; setDelta('kValueDelta', data.k.delta); }
+
+      if (data.npkRatio) { $('npkRatio').textContent = data.npkRatio.value; setDelta('npkRatioDelta', data.npkRatio.delta); }
+      if (data.moistureStress) { $('moistureStress').textContent = data.moistureStress.value; setDelta('moistureStressDelta', data.moistureStress.delta); }
+      if (data.tempStress) { $('tempStress').textContent = data.tempStress.value; setDelta('tempStressDelta', data.tempStress.delta); }
+      if (data.salinity) { $('salinityIndex').textContent = `${data.salinity.value}`; setDelta('salinityDelta', data.salinity.delta); }
+      if (data.tds) { $('tds').textContent = `${data.tds.value} ppm`; setDelta('tdsDelta', data.tds.delta); }
+      if (data.soilOrganic) { $('soilOrganic').textContent = `${data.soilOrganic.value}%`; setDelta('soilOrganicDelta', data.soilOrganic.delta); }
+      if (data.irrigation) { $('irrigationStatus').textContent = `${data.irrigation.value}`; setDelta('irrigationDelta', data.irrigation.delta); }
+      if (data.approxPh) { $('approxPh').textContent = `${data.approxPh.value}`; setDelta('approxPhDelta', data.approxPh.delta); }
+      if (data.dhtTemp) { $('dhtTemp').textContent = `${data.dhtTemp.value}°C`; setDelta('dhtTempDelta', data.dhtTemp.delta); }
+      if (data.dhtHumidity) { $('dhtHumidity').textContent = `${data.dhtHumidity.value}%`; setDelta('dhtHumidityDelta', data.dhtHumidity.delta); }
+      if (data.mq2) { $('mq2Gas').textContent = `${data.mq2.value} ppm`; setDelta('mq2Delta', data.mq2.delta); }
+      if (data.ldr) { $('ldrLight').textContent = `${data.ldr.value} lux`; setDelta('ldrDelta', data.ldr.delta); }
+    }
+
+    // ESP32 integration helper
+    // Pass the ESP32 JSON directly to this function. Expected shape:
+    // {
+    //   soilMoisture: 65,
+    //   temperature: 28,
+    //   humidity: 70,
+    //   ec: 1.2,
+    //   ph: 6.5,
+    //   n: 120, p: 60, k: 40,
+    //   fertilityIndex: 85,
+    //   npkRatio: "2:1:1",
+    //   moistureStress: "Low",
+    //   tempStress: "Low",
+    //   salinity: 1.5,
+    //   tds: 500,
+    //   soilOrganic: 2.5,
+    //   irrigation: "On",
+    //   approxPh: 6.8,
+    //   dhtTemp: 27,
+    //   dhtHumidity: 68,
+    //   mq2: 150,
+    //   ldr: 750
+    // }
+    function ingestESP32Json(raw) {
+      const d = {
+        soilMoisture: { value: raw.soilMoisture, unit: '%', delta: raw.soilMoistureDelta || '' },
+        temperature: { value: raw.temperature, unit: '°C', delta: raw.temperatureDelta || '' },
+        humidity: { value: raw.humidity, unit: '%', delta: raw.humidityDelta || '' },
+        ec: { value: raw.ec, unit: ' dS/m', delta: raw.ecDelta || '' },
+        ph: { value: raw.ph, delta: raw.phDelta || '' },
+        n: { value: raw.n, unit: ' ppm', delta: raw.nDelta || '' },
+        p: { value: raw.p, unit: ' ppm', delta: raw.pDelta || '' },
+        k: { value: raw.k, unit: ' ppm', delta: raw.kDelta || '' },
+        fertilityIndex: { value: raw.fertilityIndex, delta: raw.fertilityDelta || '' },
+        npkRatio: { value: raw.npkRatio || `${raw.n}:${raw.p}:${raw.k}`, delta: raw.npkRatioDelta || '' },
+        moistureStress: { value: raw.moistureStress, delta: raw.moistureStressDelta || '' },
+        tempStress: { value: raw.tempStress, delta: raw.tempStressDelta || '' },
+        salinity: { value: raw.salinity, delta: raw.salinityDelta || '' },
+        tds: { value: raw.tds, unit: ' ppm', delta: raw.tdsDelta || '' },
+        soilOrganic: { value: raw.soilOrganic, unit: '%', delta: raw.soilOrganicDelta || '' },
+        irrigation: { value: raw.irrigation, delta: raw.irrigationDelta || '' },
+        approxPh: { value: raw.approxPh, delta: raw.approxPhDelta || '' },
+        dhtTemp: { value: raw.dhtTemp, unit: '°C', delta: raw.dhtTempDelta || '' },
+        dhtHumidity: { value: raw.dhtHumidity, unit: '%', delta: raw.dhtHumidityDelta || '' },
+        mq2: { value: raw.mq2, unit: ' ppm', delta: raw.mq2Delta || '' },
+        ldr: { value: raw.ldr, unit: ' lux', delta: raw.ldrDelta || '' }
+      };
+      updateDashboard(d);
+    }
+
+    // Optionally fetch from an ESP32 endpoint
+    // Example: set ESP32_IP and endpoint that returns JSON in the above shape
+    // const ESP32_IP = 'http://192.168.4.1';
+    // async function pollESP32() {
+    //   try {
+    //     const res = await fetch(`${ESP32_IP}/sensor`);
+    //     const json = await res.json();
+    //     ingestESP32Json(json);
+    //   } catch (e) { console.warn('ESP32 fetch error', e); }
+    // }
+    // setInterval(pollESP32, 5000);
+
+    // Crop-specific ideal ranges
+    const IDEALS = {
+      'Rice': { moisture: '60–70%', temp: '25–35°C', ph: '5.5–7.0' },
+      'Wheat': { moisture: '50–60%', temp: '15–25°C', ph: '6.0–7.5' },
+      'Maize': { moisture: '50–60%', temp: '20–30°C', ph: '5.8–7.0' },
+      'Sugarcane': { moisture: '60–70%', temp: '25–35°C', ph: '6.0–7.5' },
+      'Cotton': { moisture: '40–60%', temp: '21–30°C', ph: '5.8–7.5' },
+      'default': { moisture: '60–70%', temp: '25–30°C', ph: '6.0–7.0' }
+    };
+    function updateIdealsForCrop(name) {
+      const i = IDEALS[name] || IDEALS.default;
+      $('idealMoisture').textContent = i.moisture;
+      $('idealTemp').textContent = i.temp;
+      $('idealPh').textContent = i.ph;
+    }
+    $('cropSelect').addEventListener('change', (e) => updateIdealsForCrop(e.target.value));
+
+    // Simple sparkline renderer
+    function drawSparkline(canvas, points, color = '#43a047') {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+      // background grid
+      ctx.strokeStyle = '#eef2f3';
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= 3; y++) {
+        const gy = (height / 3) * y;
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(width, gy); ctx.stroke();
+      }
+      const min = Math.min(...points);
+      const max = Math.max(...points);
+      const pad = 6;
+      const range = max - min || 1;
+      const step = width / Math.max(points.length - 1, 1);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      points.forEach((v, i) => {
+        const x = i * step;
+        const y = height - pad - ((v - min) / range) * (height - pad * 2);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      // last point dot
+      const last = points[points.length - 1];
+      const lx = (points.length - 1) * step;
+      const ly = height - pad - ((last - min) / range) * (height - pad * 2);
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function initSparklines() {
+      document.querySelectorAll('canvas.sparkline').forEach((c) => {
+        const points = (c.dataset.points || '').split(',').map(Number).filter(n => !Number.isNaN(n));
+        const series = points.length ? points : Array.from({length: 16}, (_, i) => 50 + Math.sin(i/2) * 10 + Math.random() * 4);
+        drawSparkline(c, series);
+      });
+    }
+
+    // Initialize
+    updateDashboard(sampleData);
+    updateIdealsForCrop('Rice');
+    initSparklines();
+    window.addEventListener('resize', initSparklines);
+
+    // Expose functions for external usage (ESP32 integration)
+    window.ingestESP32Json = ingestESP32Json;
+    window.updateDashboard = updateDashboard;
+  </script>
+</body>
+</html>
