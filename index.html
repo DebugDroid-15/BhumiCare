@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌱 Smart Agronomist — Full Futuristic Gauge Dashboard</title>
+<title>🌱 BhumiCare — Smart Agronomist</title>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
 <!-- Highcharts -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
@@ -14,125 +14,216 @@
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
 <style>
-body { margin:0; font-family:'Poppins', sans-serif; background:#0b0b0f; color:#fff; }
-header { text-align:center; padding:20px 0; background:#1b1b2f; color:#00ffd5; font-size:28px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
-.gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; padding:20px; }
-.gauge-card { background:#141426; border-radius:16px; padding:16px; box-shadow:0 6px 16px rgba(0,0,0,0.4); text-align:center; }
-.gauge-title { font-size:16px; font-weight:600; color:#00ffd5; margin-bottom:8px; }
-.map-container { margin:20px auto; max-width:1200px; height:500px; border-radius:12px; overflow:hidden; }
+  body { font-family: 'Roboto', sans-serif; background: #f0f4f8; margin:0; color:#333; }
+  h1 { text-align:center; background:#00796b; color:white; padding:16px; margin:0; font-size:24px; }
+  .container { display:grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap:16px; padding:20px; }
+  .card { background:white; border-radius:12px; padding:16px; box-shadow:0 6px 12px rgba(0,0,0,0.1); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  #map { width:100%; height:400px; margin-top:20px; border-radius:12px; }
+  select, #suggestions { width:90%; margin:10px auto; display:block; font-size:16px; padding:8px; border-radius:6px; }
 </style>
 </head>
 <body>
 
-<header>🌱 Smart Agronomist — Full Futuristic Gauge Dashboard</header>
+<h1>🌱 Soil & Crop Dashboard</h1>
 
-<div class="gauges">
-  <div class="gauge-card"><div class="gauge-title">Soil Moisture (%)</div><div id="soilMoistureGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Temperature (°C)</div><div id="temperatureGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Humidity (%)</div><div id="humidityGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">EC (dS/m)</div><div id="ecGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">pH Level</div><div id="phGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Fertility Index</div><div id="fertilityGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">N (ppm)</div><div id="nGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">P (ppm)</div><div id="pGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">K (ppm)</div><div id="kGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">TDS (ppm)</div><div id="tdsGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Salinity Index</div><div id="salinityGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Moisture Stress</div><div id="moistureStressGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Temperature Stress</div><div id="tempStressGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">Soil Organic Proxy (%)</div><div id="soilOrganicGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">DHT Temperature (°C)</div><div id="dhtTempGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">DHT Humidity (%)</div><div id="dhtHumidityGauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">MQ2 Gas (ppm)</div><div id="mq2Gauge"></div></div>
-  <div class="gauge-card"><div class="gauge-title">LDR Light (lux)</div><div id="ldrGauge"></div></div>
-</div>
+<!-- Crop Selection -->
+<select id="cropSelect">
+  <option value="">Select Your Crop</option>
+</select>
 
-<div class="map-container">
-  <iframe id="fieldMap" loading="lazy" allowfullscreen 
-    src="https://www.google.com/maps?q=20.5937,78.9629&z=10&output=embed" 
-    title="Field Location"></iframe>
-</div>
+<div class="container" id="dashboard"></div>
 
-<script type="module">
-  import { app, db } from './firebase-config.js';
-  import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+<div id="suggestions"></div>
 
-  // Highcharts solid gauge creator
-  const createGauge = (id, min, max, unit) => {
-    return Highcharts.chart(id, {
-      chart: { type: 'solidgauge', backgroundColor:'transparent' },
-      title: null,
-      pane: { center:['50%','50%'], size:'90%', startAngle:-90, endAngle:90,
-        background:{ backgroundColor:'#22223b', innerRadius:'60%', outerRadius:'100%', shape:'arc' } },
-      tooltip: { enabled:false },
-      yAxis: {
-        min:min,
-        max:max,
-        stops:[[0.1,'#ff0000'],[0.5,'#f7c600'],[0.9,'#00ff99']],
-        lineWidth:0, tickWidth:0, minorTickInterval:null,
-        labels:{ y:16, style:{ color:'#00ffd5', fontSize:'16px' } }
-      },
-      plotOptions:{
-        solidgauge:{ dataLabels:{ y:0, borderWidth:0, useHTML:true,
-          format:`<div style="text-align:center"><span style="font-size:22px;color:#00ffd5">{y}</span><br/><span style="font-size:14px;color:#aaa">${unit}</span></div>` } }
-      },
-      series:[{ name:id, data:[0] }]
-    });
-  };
+<div id="map"></div>
 
-  // Initialize all gauges
-  const gauges = {
-    soilMoisture: createGauge('soilMoistureGauge',0,100,'%'),
-    temperature: createGauge('temperatureGauge',0,50,'°C'),
-    humidity: createGauge('humidityGauge',0,100,'%'),
-    ec: createGauge('ecGauge',0,5,'dS/m'),
-    ph: createGauge('phGauge',0,14,'pH'),
-    fertility: createGauge('fertilityGauge',0,100,'Index'),
-    N: createGauge('nGauge',0,200,'ppm'),
-    P: createGauge('pGauge',0,100,'ppm'),
-    K: createGauge('kGauge',0,100,'ppm'),
-    TDS: createGauge('tdsGauge',0,1000,'ppm'),
-    salinity: createGauge('salinityGauge',0,100,'Index'),
-    moistureStress: createGauge('moistureStressGauge',0,100,'Index'),
-    tempStress: createGauge('tempStressGauge',0,100,'Index'),
-    soilOrganic: createGauge('soilOrganicGauge',0,10,'%'),
-    dhtTemp: createGauge('dhtTempGauge',0,50,'°C'),
-    dhtHumidity: createGauge('dhtHumidityGauge',0,100,'%'),
-    mq2: createGauge('mq2Gauge',0,500,'ppm'),
-    ldr: createGauge('ldrGauge',0,1000,'lux')
-  };
+<script>
+const FIREBASE_HOST = "bhumicare-b6713-default-rtdb.firebaseio.com";
 
-  // Firebase realtime update
-  const sensorsRef = ref(db,'SensorData');
-  onValue(sensorsRef, snapshot=>{
-    const data = snapshot.val(); if(!data) return;
-    const keys = Object.keys(data);
-    const latest = data[keys[keys.length-1]];
+// ---------------- CROPS DATA ----------------
+const crops = [
+    { name: 'Rice', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
+    { name: 'Wheat', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7.5', 'Irrigate if soil moisture <30%', 'Ensure crop rotation'] },
+    { name: 'Maize', suggestions: ['Maintain soil moisture 65-75%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <40%', 'Check for pest infestations'] },
+    { name: 'Barley', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <25%', 'Ensure proper drainage'] },
+    { name: 'Sorghum', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pest infestations'] },
+    { name: 'Pearl Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <20%', 'Ensure proper drainage'] },
+    { name: 'Finger Millet', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pest infestations'] },
+    { name: 'Pulses', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <20%', 'Ensure proper drainage'] },
+    { name: 'Groundnut', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pest infestations'] },
+    { name: 'Soybean', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Ensure proper drainage'] },
+    { name: 'Cotton', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pest infestations'] },
+    { name: 'Sugarcane', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Ensure proper drainage'] },
+    { name: 'Tobacco', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pest infestations'] },
+    { name: 'Oilseeds', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <25%', 'Ensure proper drainage'] },
+    { name: 'Tea', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
+    { name: 'Coffee', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Ensure proper drainage'] },
+    { name: 'Coconut', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
+    { name: 'Areca Nut', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
+    { name: 'Banana', suggestions: ['Maintain soil moisture 75-85%', 'Apply NPK fertilizer as per growth stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <40%', 'Ensure proper drainage'] },
+    { name: 'Papaya', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Protect from strong winds'] },
+    { name: 'Mango', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate during dry spells', 'Check for mango hoppers and pests'] },
+    { name: 'Guava', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Prune regularly'] },
+    { name: 'Pomegranate', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <25%', 'Ensure proper drainage'] },
+    { name: 'Litchi', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate during dry spells', 'Protect young plants from frost'] },
+    { name: 'Sapota', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Mulch around roots to retain moisture'] },
+    { name: 'Jackfruit', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for fruit borer'] },
+    { name: 'Cashew', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate during dry spells', 'Protect from anthracnose disease'] },
+    { name: 'Chikoo (Sapodilla)', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Prune to maintain canopy'] },
+    { name: 'Strawberry', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 5.5-6.5', 'Irrigate during dry spells', 'Ensure proper drainage'] },
+    { name: 'Tomato', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for leaf curl virus'] },
+    { name: 'Brinjal (Eggplant)', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for shoot and fruit borer'] },
+    { name: 'Chili', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pests regularly'] },
+    { name: 'Capsicum', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper sunlight'] },
+    { name: 'Cucumber', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate during dry spells', 'Provide trellis support'] },
+    { name: 'Bottle Gourd', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Train vines properly'] },
+    { name: 'Pumpkin', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Control powdery mildew'] },
+    { name: 'Bitter Gourd', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Support climbing'] },
+    { name: 'Snake Gourd', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Provide trellis support'] },
+    { name: 'Okra (Lady Finger)', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for pests and blight'] },
+    { name: 'Cabbage', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from whiteflies and pests'] },
+    { name: 'Cauliflower', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for aphids'] },
+    { name: 'Carrot', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure loose soil for root growth'] },
+    { name: 'Radish', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for pests'] },
+    { name: 'Beetroot', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure loose soil for roots'] },
+    { name: 'Spinach', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Harvest leaves periodically'] },
+    { name: 'Fenugreek', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pests'] },
+    { name: 'Coriander', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Harvest leaves periodically'] },
+    { name: 'Mint', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Harvest leaves as needed'] },
+    { name: 'Basil', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Harvest leaves as needed'] },
+    { name: 'Lettuce', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests'] },
+    { name: 'Kale', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for aphids'] },
+    { name: 'Mustard', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for pests and disease'] },
+    { name: 'Sunflower', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <40%', 'Support stems if needed'] },
+    { name: 'Groundnut', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper drainage'] },
+    { name: 'Soybean', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Monitor for pests'] },
+    { name: 'Green Gram', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Harvest at maturity'] },
+    { name: 'Black Gram', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pests'] },
+    { name: 'Red Gram', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Protect from pod borers'] },
+    { name: 'Chickpea', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Ensure good soil drainage'] },
+    { name: 'Pigeon Pea', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Check for pests'] },
+    { name: 'Cowpea', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Harvest pods timely'] },
+    { name: 'Sesame', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if dry', 'Protect from pests'] },
+    { name: 'Sunflower', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure proper sunlight'] },
+    { name: 'Cotton', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate during dry spells', 'Check for bollworm and pests'] },
+    { name: 'Sugarcane', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper drainage'] },
+    { name: 'Tobacco', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from leaf diseases'] },
+    { name: 'Tea', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 5-6', 'Irrigate as needed', 'Pluck leaves carefully'] },
+    { name: 'Coffee', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 5-6', 'Irrigate regularly', 'Protect from pests'] },
+    { name: 'Rubber', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 5-6', 'Irrigate as needed', 'Check for fungal infections'] },
+    { name: 'Coconut', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests and wind'] },
+    { name: 'Maize', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for stem borer'] },
+    { name: 'Rice', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure water management'] },
+    { name: 'Wheat', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if dry', 'Check for rust and pests'] },
+    { name: 'Barley', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Protect from fungal infections'] },
+    { name: 'Oats', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Check for aphids'] },
+    { name: 'Sorghum', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Check for stem borer'] },
+    { name: 'Pearl Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <30%', 'Check for pests'] },
+    { name: 'Foxtail Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Harvest timely'] },
+    { name: 'Little Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Check for pests'] },
+    { name: 'Kodo Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if dry', 'Harvest at maturity'] },
+    { name: 'Barnyard Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Check for pests'] },
+    { name: 'Finger Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure good soil aeration'] },
+    { name: 'Proso Millet', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Harvest timely'] },
+    { name: 'Buckwheat', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Protect from pests'] },
+    { name: 'Quinoa', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure good sunlight'] },
+    { name: 'Amaranth', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Harvest leaves periodically'] },
+    { name: 'Chia', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Protect from pests'] },
+    { name: 'Flax', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate as needed', 'Harvest at seed maturity'] },
+    { name: 'Sunflower', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Support tall stems'] },
+    { name: 'Sesbania', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Use as green manure'] },
+    { name: 'Vigna', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Harvest pods timely'] },
+    { name: 'Arhar (Tur)', suggestions: ['Maintain soil moisture 40-50%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if dry', 'Check for pests'] },
+    { name: 'Peas', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Support climbing'] },
+    { name: 'Sweet Potato', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure loose soil for roots'] },
+    { name: 'Yam', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for pests'] },
+    { name: 'Taro', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from fungal diseases'] },
+    { name: 'Arrowroot', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure proper drainage'] },
+    { name: 'Ginger', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Mulch around roots'] },
+    { name: 'Turmeric', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Mulch and protect rhizomes'] },
+    { name: 'Garlic', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests'] },
+    { name: 'Onion', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Ensure good sunlight'] },
+    { name: 'Shallots', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Check for pests'] },
+    { name: 'Leek', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Protect from diseases'] },
+    { name: 'Celery', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper spacing'] },
+    { name: 'Asparagus', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Support shoots if needed'] },
+    { name: 'Artichoke', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests'] }
+];
 
-    gauges.soilMoisture.series[0].points[0].update(latest.moistureNPK || 0);
-    gauges.temperature.series[0].points[0].update(latest.tempNPK || 0);
-    gauges.humidity.series[0].points[0].update(latest.humidityDHT || 0);
-    gauges.ec.series[0].points[0].update(latest.ec || 0);
-    gauges.ph.series[0].points[0].update(latest.pH || 0);
-    gauges.fertility.series[0].points[0].update(latest.fertilityIndex || 0);
-    gauges.N.series[0].points[0].update(latest.N || 0);
-    gauges.P.series[0].points[0].update(latest.P || 0);
-    gauges.K.series[0].points[0].update(latest.K || 0);
-    gauges.TDS.series[0].points[0].update(latest.TDS || 0);
-    gauges.salinity.series[0].points[0].update(latest.salinityIndex || 0);
-    gauges.moistureStress.series[0].points[0].update(latest.moistureStress || 0);
-    gauges.tempStress.series[0].points[0].update(latest.tempStress || 0);
-    gauges.soilOrganic.series[0].points[0].update(latest.soilOrganicProxy || 0);
-    gauges.dhtTemp.series[0].points[0].update(latest.temperatureDHT || 0);
-    gauges.dhtHumidity.series[0].points[0].update(latest.humidityDHT || 0);
-    gauges.mq2.series[0].points[0].update(latest.mq2Raw || 0);
-    gauges.ldr.series[0].points[0].update(latest.ldrRaw || 0);
+// Populate dropdown
+const cropSelect = document.getElementById('cropSelect');
+crops.forEach(c => {
+    const option = document.createElement('option');
+    option.value = c.name;
+    option.textContent = c.name;
+    cropSelect.appendChild(option);
+});
 
-    if(latest.gpsLat && latest.gpsLng){
-      document.getElementById('fieldMap').src = `https://www.google.com/maps?q=${latest.gpsLat},${latest.gpsLng}&z=15&output=embed`;
+// Display suggestions dynamically
+cropSelect.addEventListener('change', () => {
+    const selected = crops.find(c => c.name === cropSelect.value);
+    const suggDiv = document.getElementById('suggestions');
+    if(selected){
+        suggDiv.innerHTML = `<h3>Suggestions for ${selected.name}:</h3><ul>${selected.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
+    } else {
+        suggDiv.innerHTML = '';
     }
-  });
+});
 
+// ---------------- SENSOR GAUGES ----------------
+const gaugeIds = ['moistureNPK','tempNPK','ec','N','P','K','fertilityIndex','TDS','salinityIndex','moistureStress','tempStress','NPKRatioN','NPKRatioP','NPKRatioK','soilOrganicProxy','pH','temperatureDHT','humidityDHT','mq2Raw','ldrRaw','soilMoistureRaw'];
+const dashboard = document.getElementById('dashboard');
+
+gaugeIds.forEach(id => {
+    const card = document.createElement('div');
+    card.className='card';
+    card.id='card-'+id;
+    dashboard.appendChild(card);
+});
+
+// Fetch sensor data from Firebase
+async function fetchData(){
+    try{
+        const res = await fetch(`https://${FIREBASE_HOST}/SensorData.json`);
+        const data = await res.json();
+        const keys = Object.keys(data);
+        const latest = data[keys[keys.length-1]];
+        
+        gaugeIds.forEach(id => {
+            const card = document.getElementById('card-'+id);
+            if(!card.chart){
+                card.chart = Highcharts.chart(card, {
+                    chart: { type: 'solidgauge', height: 200 },
+                    title: { text: id },
+                    pane: { center: ['50%', '50%'], size: '90%', startAngle: -90, endAngle: 90 },
+                    yAxis: { min: 0, max: 100, stops: [[0.1, '#55BF3B'], [0.5,'#DDDF0D'], [0.9,'#DF5353']] },
+                    series: [{ name: id, data: [latest[id]||0], dataLabels: { format:'<div style="text-align:center;font-size:16px;">{y}</div>' } }]
+                });
+            } else {
+                card.chart.series[0].points[0].update(latest[id]||0);
+            }
+        });
+
+        // Update map
+        if(latest.gpsLat && latest.gpsLng && window.map && window.marker){
+            const pos = { lat: latest.gpsLat, lng: latest.gpsLng };
+            map.setCenter(pos);
+            marker.setPosition(pos);
+        }
+
+    } catch(e){ console.error(e); }
+    setTimeout(fetchData, 5000); // polling every 5 sec
+}
+fetchData();
+
+// ---------------- GOOGLE MAP ----------------
+let map, marker;
+function initMap(){
+    map = new google.maps.Map(document.getElementById('map'), { zoom: 6, center: {lat:20.5937,lng:78.9629} });
+    marker = new google.maps.Marker({ position: {lat:20.5937,lng:78.9629}, map: map, title:'Current Location' });
+}
 </script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7YHaxjiMaPXsWuGiQHO4ElY2SST7K_hw&callback=initMap"></script>
 </body>
 </html>
