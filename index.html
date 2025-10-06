@@ -3,46 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌱 BhumiCare — Smart Agronomist</title>
+<title>Smart BhumiCare — Smart Agronomist</title>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Highcharts -->
+<!-- Highcharts for modern gauges -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
 <script src="https://code.highcharts.com/highcharts-more.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_FIREBASE_PROJECT.firebaseapp.com",
+    databaseURL: "https://bhumicare-b6713-default-rtdb.firebaseio.com",
+    projectId: "YOUR_FIREBASE_PROJECT",
+    storageBucket: "YOUR_FIREBASE_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+</script>
+
 <style>
-  body { font-family: 'Roboto', sans-serif; background: #f0f4f8; margin:0; color:#333; }
-  h1 { text-align:center; background:#00796b; color:white; padding:16px; margin:0; font-size:24px; }
-  .container { display:grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap:16px; padding:20px; }
-  .card { background:white; border-radius:12px; padding:16px; box-shadow:0 6px 12px rgba(0,0,0,0.1); display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  #map { width:100%; height:400px; margin-top:20px; border-radius:12px; }
-  select, #suggestions { width:90%; margin:10px auto; display:block; font-size:16px; padding:8px; border-radius:6px; }
+body { margin:0; font-family:'Poppins',sans-serif; background:#f0f4f8; color:#1b5e20; }
+header { text-align:center; padding:16px 0; background:#2e7d32; color:white; font-size:24px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.controls { text-align:center; margin:12px 0;}
+select { padding:8px 12px; font-size:14px; border-radius:8px; border:1px solid #2e7d32; width:90%; max-width:300px; }
+.gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; padding:16px;}
+.gauge-card { background:#fff; border-radius:12px; padding:12px; box-shadow:0 4px 14px rgba(0,0,0,0.12); text-align:center; position:relative;}
+.gauge-card h3 { margin:6px 0; font-size:16px; color:#2e7d32;}
+.suggestions { max-width:1200px; margin:0 auto; padding:16px; background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.map-container { margin:20px auto; max-width:1200px; height:60vh; border-radius:12px; overflow:hidden; }
+@media(max-width:640px){ .gauges { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); } }
 </style>
 </head>
 <body>
 
-<h1>🌱 Soil & Crop Dashboard</h1>
+<header>🌱 Smart BhumiCare — Smart Agronomist</header>
 
-<!-- Crop Selection -->
-<select id="cropSelect">
-  <option value="">Select Your Crop</option>
-</select>
+<div class="controls">
+  <label for="cropSelect">Select Crop: </label>
+  <select id="cropSelect"></select>
+</div>
 
-<div class="container" id="dashboard"></div>
+<div class="gauges">
+  <div class="gauge-card"><h3>Soil Moisture (%)</h3><div id="soilMoistureGauge"></div></div>
+  <div class="gauge-card"><h3>Temperature (°C)</h3><div id="temperatureGauge"></div></div>
+  <div class="gauge-card"><h3>Humidity (%)</h3><div id="humidityGauge"></div></div>
+  <div class="gauge-card"><h3>EC (dS/m)</h3><div id="ecGauge"></div></div>
+  <div class="gauge-card"><h3>pH Level</h3><div id="phGauge"></div></div>
+  <div class="gauge-card"><h3>Fertility Index</h3><div id="fertilityGauge"></div></div>
+  <div class="gauge-card"><h3>N (ppm)</h3><div id="nGauge"></div></div>
+  <div class="gauge-card"><h3>P (ppm)</h3><div id="pGauge"></div></div>
+  <div class="gauge-card"><h3>K (ppm)</h3><div id="kGauge"></div></div>
+  <div class="gauge-card"><h3>TDS (ppm)</h3><div id="tdsGauge"></div></div>
+  <div class="gauge-card"><h3>Salinity Index</h3><div id="salinityGauge"></div></div>
+  <div class="gauge-card"><h3>Moisture Stress</h3><div id="moistureStressGauge"></div></div>
+  <div class="gauge-card"><h3>Temperature Stress</h3><div id="tempStressGauge"></div></div>
+  <div class="gauge-card"><h3>Soil Organic Proxy (%)</h3><div id="soilOrganicGauge"></div></div>
+  <div class="gauge-card"><h3>DHT Temp (°C)</h3><div id="dhtTempGauge"></div></div>
+  <div class="gauge-card"><h3>DHT Humidity (%)</h3><div id="dhtHumidityGauge"></div></div>
+  <div class="gauge-card"><h3>MQ2 Gas (ppm)</h3><div id="mq2Gauge"></div></div>
+  <div class="gauge-card"><h3>LDR Light (lux)</h3><div id="ldrGauge"></div></div>
+</div>
 
-<div id="suggestions"></div>
+<div class="suggestions" id="suggestionsBox">
+  <h3>Crop Recommendations</h3>
+  <ul id="suggestionList"></ul>
+</div>
 
-<div id="map"></div>
+<div class="map-container">
+  <iframe id="fieldMap" loading="lazy" allowfullscreen 
+    src="https://www.google.com/maps?q=20.5937,78.9629&z=10&output=embed" 
+    title="Field Location" width="100%" height="100%"></iframe>
+</div>
 
-<script>
-const FIREBASE_HOST = "bhumicare-b6713-default-rtdb.firebaseio.com";
+<script type="module">
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-// ---------------- CROPS DATA ----------------
-const crops = [
-    { name: 'Rice', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
+const db = getDatabase();
+
+// ================= Gauge Helper =================
+const createGauge=(id,title,min,max,unit)=>{
+  return Highcharts.chart(id,{
+    chart: { type: 'solidgauge', height: '200px' },
+    title: null,
+    pane: { center: ['50%', '50%'], size: '100%', startAngle: -90, endAngle: 90,
+      background: { backgroundColor:'#EEE', innerRadius:'60%', outerRadius:'100%', shape:'arc' } },
+    tooltip: { enabled:false },
+    yAxis: { min:min, max:max, stops:[[0,'#d32f2f'],[0.5,'#fbc02d'],[1,'#4caf50']],
+      lineWidth:0, tickPositions:[] },
+    plotOptions: { solidgauge: { dataLabels: { y:0, borderWidth:0, useHTML:true, format:'<div style="text-align:center"><span style="font-size:18px">{y} '+unit+'</span></div>' } } },
+    series: [{ name:title, data:[0] }]
+  });
+};
+
+// ================= Initialize All Gauges =================
+const gauges = {
+  soilMoisture:createGauge('soilMoistureGauge','Soil Moisture',0,100,'%'),
+  temperature:createGauge('temperatureGauge','Temperature',0,50,'°C'),
+  humidity:createGauge('humidityGauge','Humidity',0,100,'%'),
+  ec:createGauge('ecGauge','EC',0,5,'dS/m'),
+  ph:createGauge('phGauge','pH',0,14,''),
+  fertility:createGauge('fertilityGauge','Fertility Index',0,100,''),
+  N:createGauge('nGauge','N',0,200,'ppm'),
+  P:createGauge('pGauge','P',0,100,'ppm'),
+  K=createGauge('kGauge','K',0,100,'ppm'),
+  TDS=createGauge('tdsGauge','TDS',0,1000,'ppm'),
+  salinity:createGauge('salinityGauge','Salinity',0,100,''),
+  moistureStress:createGauge('moistureStressGauge','Moisture Stress',0,100,''),
+  tempStress:createGauge('tempStressGauge','Temp Stress',0,100,''),
+  soilOrganic:createGauge('soilOrganicGauge','Soil Organic Proxy',0,10,'%'),
+  dhtTemp:createGauge('dhtTempGauge','DHT Temp',0,50,'°C'),
+  dhtHumidity:createGauge('dhtHumidityGauge','DHT Humidity',0,100,'%'),
+  mq2:createGauge('mq2Gauge','MQ2 Gas',0,500,'ppm'),
+  ldr:createGauge('ldrGauge','LDR Light',0,1000,'lux')
+};
+
+// ================= Crop Suggestions =================
+const cropSuggestions = {
+  { name: 'Rice', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
     { name: 'Wheat', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7.5', 'Irrigate if soil moisture <30%', 'Ensure crop rotation'] },
     { name: 'Maize', suggestions: ['Maintain soil moisture 65-75%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <40%', 'Check for pest infestations'] },
     { name: 'Barley', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <25%', 'Ensure proper drainage'] },
@@ -148,82 +236,63 @@ const crops = [
     { name: 'Celery', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper spacing'] },
     { name: 'Asparagus', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Support shoots if needed'] },
     { name: 'Artichoke', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests'] }
-];
+};
 
-// Populate dropdown
+// ================= Populate Crop Dropdown =================
 const cropSelect = document.getElementById('cropSelect');
-crops.forEach(c => {
-    const option = document.createElement('option');
-    option.value = c.name;
-    option.textContent = c.name;
-    cropSelect.appendChild(option);
+Object.keys(cropSuggestions).forEach(crop=>{
+  const opt = document.createElement('option'); opt.value=crop; opt.textContent=crop; cropSelect.appendChild(opt);
 });
 
-// Display suggestions dynamically
-cropSelect.addEventListener('change', () => {
-    const selected = crops.find(c => c.name === cropSelect.value);
-    const suggDiv = document.getElementById('suggestions');
-    if(selected){
-        suggDiv.innerHTML = `<h3>Suggestions for ${selected.name}:</h3><ul>${selected.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
-    } else {
-        suggDiv.innerHTML = '';
+// ================= Update Suggestions =================
+const suggestionList = document.getElementById('suggestionList');
+function updateSuggestions(){
+  const crop = cropSelect.value;
+  suggestionList.innerHTML = '';
+  if(cropSuggestions[crop]){
+    cropSuggestions[crop].forEach(s => {
+      const li = document.createElement('li'); li.textContent = s; suggestionList.appendChild(li);
+    });
+  }
+}
+cropSelect.addEventListener('change',updateSuggestions);
+window.onload=updateSuggestions;
+
+// ================= Firebase Live Updates =================
+const sensorsRef = ref(db,'/SensorData');
+onValue(sensorsRef,snapshot=>{
+  const data = snapshot.val();
+  if(!data) return;
+  const keys = Object.keys(data);
+  const latest = data[keys[keys.length-1]];
+
+  if(latest){
+    gauges.soilMoisture.series[0].setData([latest.moistureNPK||0]);
+    gauges.temperature.series[0].setData([latest.tempNPK||0]);
+    gauges.humidity.series[0].setData([latest.humidityDHT||0]);
+    gauges.ec.series[0].setData([latest.ec||0]);
+    gauges.ph.series[0].setData([latest.pH||0]);
+    gauges.fertility.series[0].setData([latest.fertilityIndex||0]);
+    gauges.N.series[0].setData([latest.N||0]);
+    gauges.P.series[0].setData([latest.P||0]);
+    gauges.K.series[0].setData([latest.K||0]);
+    gauges.TDS.series[0].setData([latest.TDS||0]);
+    gauges.salinity.series[0].setData([latest.salinityIndex||0]);
+    gauges.moistureStress.series[0].setData([latest.moistureStress||0]);
+    gauges.tempStress.series[0].setData([latest.tempStress||0]);
+    gauges.soilOrganic.series[0].setData([latest.soilOrganicProxy||0]);
+    gauges.dhtTemp.series[0].setData([latest.temperatureDHT||0]);
+    gauges.dhtHumidity.series[0].setData([latest.humidityDHT||0]);
+    gauges.mq2.series[0].setData([latest.mq2Raw||0]);
+    gauges.ldr.series[0].setData([latest.ldrRaw||0]);
+
+    // Update map location
+    if(latest.gpsLat && latest.gpsLng){
+      document.getElementById('fieldMap').src = `https://www.google.com/maps?q=${latest.gpsLat},${latest.gpsLng}&z=15&output=embed`;
     }
+  }
 });
-
-// ---------------- SENSOR GAUGES ----------------
-const gaugeIds = ['moistureNPK','tempNPK','ec','N','P','K','fertilityIndex','TDS','salinityIndex','moistureStress','tempStress','NPKRatioN','NPKRatioP','NPKRatioK','soilOrganicProxy','pH','temperatureDHT','humidityDHT','mq2Raw','ldrRaw','soilMoistureRaw'];
-const dashboard = document.getElementById('dashboard');
-
-gaugeIds.forEach(id => {
-    const card = document.createElement('div');
-    card.className='card';
-    card.id='card-'+id;
-    dashboard.appendChild(card);
-});
-
-// Fetch sensor data from Firebase
-async function fetchData(){
-    try{
-        const res = await fetch(`https://${FIREBASE_HOST}/SensorData.json`);
-        const data = await res.json();
-        const keys = Object.keys(data);
-        const latest = data[keys[keys.length-1]];
-        
-        gaugeIds.forEach(id => {
-            const card = document.getElementById('card-'+id);
-            if(!card.chart){
-                card.chart = Highcharts.chart(card, {
-                    chart: { type: 'solidgauge', height: 200 },
-                    title: { text: id },
-                    pane: { center: ['50%', '50%'], size: '90%', startAngle: -90, endAngle: 90 },
-                    yAxis: { min: 0, max: 100, stops: [[0.1, '#55BF3B'], [0.5,'#DDDF0D'], [0.9,'#DF5353']] },
-                    series: [{ name: id, data: [latest[id]||0], dataLabels: { format:'<div style="text-align:center;font-size:16px;">{y}</div>' } }]
-                });
-            } else {
-                card.chart.series[0].points[0].update(latest[id]||0);
-            }
-        });
-
-        // Update map
-        if(latest.gpsLat && latest.gpsLng && window.map && window.marker){
-            const pos = { lat: latest.gpsLat, lng: latest.gpsLng };
-            map.setCenter(pos);
-            marker.setPosition(pos);
-        }
-
-    } catch(e){ console.error(e); }
-    setTimeout(fetchData, 5000); // polling every 5 sec
-}
-fetchData();
-
-// ---------------- GOOGLE MAP ----------------
-let map, marker;
-function initMap(){
-    map = new google.maps.Map(document.getElementById('map'), { zoom: 6, center: {lat:20.5937,lng:78.9629} });
-    marker = new google.maps.Marker({ position: {lat:20.5937,lng:78.9629}, map: map, title:'Current Location' });
-}
 </script>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7YHaxjiMaPXsWuGiQHO4ElY2SST7K_hw&callback=initMap"></script>
 </body>
 </html>
