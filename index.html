@@ -3,143 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌱 Smart Agronomist — Full Dashboard</title>
+<title>🌱 Smart Agronomist — Modern Dashboard</title>
 
 <!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Canvas Gauges & Chart.js -->
+<!-- Canvas Gauges -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body { margin:0; font-family:'Poppins',sans-serif; background:#f0f4f8; color:#1b5e20; }
-header { text-align:center; padding:16px 0; background:#2e7d32; color:white; font-size:24px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
-.container { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; padding:16px; }
-.card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); text-align:center; }
-.trend-container { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; padding:16px; }
-.map-container { width:100%; height:500px; margin-top:16px; border-radius:12px; overflow:hidden; }
+header { text-align:center; padding:20px 0; background:#2e7d32; color:white; font-size:26px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.container { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; padding:20px;}
+.card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 6px 15px rgba(0,0,0,0.1); text-align:center; position:relative;}
+.card h2 { margin:0 0 12px; font-size:18px; color:#2e7d32;}
+.alert { position:absolute; top:10px; right:12px; font-size:20px; color:#d32f2f; display:none; }
+#mapContainer { width:100%; height:450px; margin-top:30px; border-radius:16px; overflow:hidden; }
 </style>
 </head>
 <body>
 
-<header>🌱 Smart Agronomist Dashboard</header>
+<header>🌱 Smart Agronomist — Modern Dashboard</header>
 
-<div class="container" id="gauges">
-  <!-- Gauges will be inserted here -->
+<div class="container" id="gaugesContainer">
+  <!-- Cards will be generated dynamically -->
 </div>
 
-<div class="trend-container" id="trends">
-  <!-- Trend charts -->
+<div id="mapContainer">
+  <iframe id="fieldMap" loading="lazy" allowfullscreen
+    src="https://www.google.com/maps?q=20.5937,78.9629&z=10&output=embed"
+    style="width:100%;height:100%;border:0;"></iframe>
 </div>
 
-<div class="map-container" id="map"></div>
-
-<!-- Firebase SDK -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+  import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "bhumicare-b6713.firebaseapp.com",
-  databaseURL: "https://bhumicare-b6713-default-rtdb.firebaseio.com",
-  projectId: "bhumicare-b6713",
-  storageBucket: "bhumicare-b6713.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  // ---------- Firebase config ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7YHaxjiMaPXsWuGiQHO4ElY2SST7K_hw",
+    authDomain: "bhumicare-b6713.firebaseapp.com",
+    databaseURL: "https://bhumicare-b6713-default-rtdb.firebaseio.com",
+    projectId: "bhumicare-b6713",
+    storageBucket: "bhumicare-b6713.appspot.com",
+    messagingSenderId: "1234567890",
+    appId: "1:1234567890:web:abcdef123456"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const sensorRef = ref(db, "SensorData");
+  // ---------- Sensor IDs & display names ----------
+  const sensors = [
+    {id:'moistureNPK', label:'Soil Moisture (%)', min:0, max:100},
+    {id:'tempNPK', label:'Soil Temp (°C)', min:0, max:50},
+    {id:'ec', label:'EC (µS/cm)', min:0, max:2000},
+    {id:'N', label:'Nitrogen (ppm)', min:0, max:200},
+    {id:'P', label:'Phosphorus (ppm)', min:0, max:100},
+    {id:'K', label:'Potassium (ppm)', min:0, max:100},
+    {id:'fertilityIndex', label:'Fertility Index', min:0, max:100},
+    {id:'TDS', label:'TDS (ppm)', min:0, max:1000},
+    {id:'salinityIndex', label:'Salinity Index', min:0, max:100},
+    {id:'moistureStress', label:'Moisture Stress', min:0, max:100},
+    {id:'tempStress', label:'Temperature Stress', min:0, max:100},
+    {id:'soilOrganicProxy', label:'Soil Organic Proxy', min:0, max:10},
+    {id:'pH', label:'pH Level', min:0, max:14},
+    {id:'temperatureDHT', label:'DHT Temp (°C)', min:0, max:50},
+    {id:'humidityDHT', label:'DHT Humidity (%)', min:0, max:100},
+    {id:'mq2Raw', label:'MQ2 Gas (ppm)', min:0, max:500},
+    {id:'ldrRaw', label:'LDR Light (lux)', min:0, max:1000},
+    {id:'soilMoistureRaw', label:'Soil Moisture Analog', min:0, max:4095}
+  ];
 
-// Gauges
-const gaugeSettings = (min,max,units)=>({
-  renderTo:null, width:180, height:180, units:units, minValue:min, maxValue:max,
-  majorTicks:[min,(min+max)/2,max], minorTicks:5, strokeTicks:true,
-  highlights:[{from:min,to:(min+max)/3,color:'#d32f2f'},{from:(min+max)/3,to:2*(min+max)/3,color:'#fbc02d'},{from:2*(min+max)/3,to:max,color:'#4caf50'}],
-  colorPlate:'#f5f5f5', colorMajorTicks:'#1b5e20', colorMinorTicks:'#607d8b', colorNumbers:'#1b5e20',
-  colorNeedle:'#d32f2f', colorNeedleEnd:'#d32f2f', animationDuration:500, animationRule:'linear'
-});
-
-const gaugeIds = ["moistureNPK","tempNPK","ec","N","P","K","fertilityIndex","TDS","salinityIndex","moistureStress","tempStress","soilOrganicProxy","temperatureDHT","humidityDHT","mq2Raw","ldrRaw","soilMoistureRaw"];
-const gaugeLabels = ["Soil Moisture (%)","Soil Temp (°C)","EC (µS/cm)","N (ppm)","P (ppm)","K (ppm)","Fertility Index","TDS (ppm)","Salinity Index","Moisture Stress","Temp Stress","Soil Organic Proxy","DHT Temp (°C)","DHT Humidity (%)","MQ2 Gas","LDR Light","Soil Moisture Analog"];
-const gaugeMax = [100,50,2000,200,100,100,100,1000,100,100,100,10,50,100,500,1000,100];
-
-const gauges = {};
-const container = document.getElementById("gauges");
-gaugeIds.forEach((id,i)=>{
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `<h3>${gaugeLabels[i]}</h3><canvas id="${id}Gauge"></canvas>`;
-  container.appendChild(card);
-  gauges[id] = new RadialGauge({...gaugeSettings(0,gaugeMax[i],gaugeLabels[i].includes('%')?'%':'') , renderTo: document.getElementById(id+'Gauge')}).draw();
-});
-
-// Trends
-const trendsContainer = document.getElementById("trends");
-const trendCharts = {};
-gaugeIds.forEach((id,i)=>{
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `<h4>${gaugeLabels[i]} Trend</h4><canvas id="${id}Trend"></canvas>`;
-  trendsContainer.appendChild(card);
-  const ctx = document.getElementById(id+'Trend').getContext('2d');
-  trendCharts[id] = new Chart(ctx,{
-    type:'line',
-    data:{labels:[], datasets:[{label:gaugeLabels[i],data:[], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.2)', fill:true, tension:0.3}]},
-    options:{responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:true,title:{display:true,text:'Time'}}, y:{beginAtZero:true}}}
-  });
-});
-
-// Map initialization
-let map, marker;
-function initMap(lat=20.5937,lng=78.9629){
-  map = new google.maps.Map(document.getElementById("map"), { center:{lat,lng}, zoom:8 });
-  marker = new google.maps.Marker({ position:{lat,lng}, map:map, title:"Field Location" });
-}
-
-// Real-time updates
-onValue(sensorRef, (snapshot)=>{
-  const data = snapshot.val();
-  if(!data) return;
-  const keys = Object.keys(data);
-  const latest = data[keys[keys.length-1]];
-
-  // Update gauges
-  gaugeIds.forEach(id=>{
-    if(latest[id]!=null) gauges[id].value = latest[id];
+  // ---------- Create cards dynamically ----------
+  const container = document.getElementById('gaugesContainer');
+  const gauges = {};
+  sensors.forEach(s=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h2>${s.label}</h2><span class="alert" id="${s.id}Alert">⚠️</span><canvas id="${s.id}Gauge" width="180" height="180"></canvas>`;
+    container.appendChild(card);
+    gauges[s.id] = new RadialGauge({
+      renderTo: document.getElementById(`${s.id}Gauge`),
+      width:180, height:180,
+      units: '',
+      minValue:s.min, maxValue:s.max,
+      majorTicks:[s.min, (s.min+s.max)/2, s.max],
+      minorTicks:4,
+      strokeTicks:true,
+      highlights:[{from:s.min, to:(s.min+s.max)/3, color:'#d32f2f'},
+                  {from:(s.min+s.max)/3, to:2*(s.min+s.max)/3, color:'#fbc02d'},
+                  {from:2*(s.min+s.max)/3, to:s.max, color:'#4caf50'}],
+      colorPlate:'#f5f5f5', colorMajorTicks:'#1b5e20', colorMinorTicks:'#607d8b',
+      colorNumbers:'#1b5e20', colorNeedle:'#d32f2f', colorNeedleEnd:'#d32f2f',
+      animationDuration:400, animationRule:'linear'
+    }).draw();
   });
 
-  // Update trends
-  const timestamp = new Date().toLocaleTimeString();
-  gaugeIds.forEach(id=>{
-    if(latest[id]!=null){
-      const chart = trendCharts[id];
-      chart.data.labels.push(timestamp);
-      chart.data.datasets[0].data.push(latest[id]);
-      if(chart.data.labels.length>20){ chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
-      chart.update();
+  const checkAlert=(val,minSafe,maxSafe,alertId)=>{
+    const el = document.getElementById(alertId);
+    if(!el) return;
+    el.style.display = (val<minSafe || val>maxSafe)?'inline':'none';
+  };
+
+  // ---------- Firebase live updates ----------
+  const sensorRef = ref(db,'/SensorData');
+  onChildAdded(sensorRef,snap=>{
+    const data = snap.val();
+    if(!data) return;
+
+    // Update each gauge & alert
+    sensors.forEach(s=>{
+      if(data[s.id]!=null){
+        gauges[s.id].value = data[s.id];
+        // You can set your own alert ranges here
+        checkAlert(data[s.id], s.min+(s.max-s.min)*0.2, s.max-(s.max-s.min)*0.2, s.id+'Alert');
+      }
+    });
+
+    // Update map
+    if(data.gpsLat!=null && data.gpsLng!=null){
+      document.getElementById('fieldMap').src = `https://www.google.com/maps?q=${data.gpsLat},${data.gpsLng}&z=15&output=embed`;
     }
   });
 
-  // Update map
-  if(latest.gpsLat && latest.gpsLng){
-    const lat = parseFloat(latest.gpsLat);
-    const lng = parseFloat(latest.gpsLng);
-    marker.setPosition({lat,lng});
-    map.setCenter({lat,lng});
-    map.setZoom(15);
-  }
-});
-
-window.initMap = initMap;
 </script>
-
-<!-- Google Maps JS -->
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7YHaxjiMaPXsWuGiQHO4ElY2SST7K_hw&callback=initMap"></script>
-
 </body>
 </html>
