@@ -3,129 +3,136 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌱 Smart Agronomist — Modern Dashboard</title>
+<title>🌱 Smart Agronomist — Full Futuristic Gauge Dashboard</title>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-<!-- Canvas Gauges -->
-<script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
+<!-- Highcharts -->
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
 <style>
-body { margin:0; font-family:'Poppins',sans-serif; background:#f0f4f8; color:#1b5e20; }
-header { text-align:center; padding:20px 0; background:#2e7d32; color:white; font-size:26px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
-.container { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; padding:20px;}
-.card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 6px 15px rgba(0,0,0,0.1); text-align:center; position:relative;}
-.card h2 { margin:0 0 12px; font-size:18px; color:#2e7d32;}
-.alert { position:absolute; top:10px; right:12px; font-size:20px; color:#d32f2f; display:none; }
-#mapContainer { width:100%; height:450px; margin-top:30px; border-radius:16px; overflow:hidden; }
+body { margin:0; font-family:'Poppins', sans-serif; background:#0b0b0f; color:#fff; }
+header { text-align:center; padding:20px 0; background:#1b1b2f; color:#00ffd5; font-size:28px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+.gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; padding:20px; }
+.gauge-card { background:#141426; border-radius:16px; padding:16px; box-shadow:0 6px 16px rgba(0,0,0,0.4); text-align:center; }
+.gauge-title { font-size:16px; font-weight:600; color:#00ffd5; margin-bottom:8px; }
+.map-container { margin:20px auto; max-width:1200px; height:500px; border-radius:12px; overflow:hidden; }
 </style>
 </head>
 <body>
 
-<header>🌱 Smart Agronomist — Modern Dashboard</header>
+<header>🌱 Smart Agronomist — Full Futuristic Gauge Dashboard</header>
 
-<div class="container" id="gaugesContainer">
-  <!-- Cards will be generated dynamically -->
+<div class="gauges">
+  <div class="gauge-card"><div class="gauge-title">Soil Moisture (%)</div><div id="soilMoistureGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Temperature (°C)</div><div id="temperatureGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Humidity (%)</div><div id="humidityGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">EC (dS/m)</div><div id="ecGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">pH Level</div><div id="phGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Fertility Index</div><div id="fertilityGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">N (ppm)</div><div id="nGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">P (ppm)</div><div id="pGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">K (ppm)</div><div id="kGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">TDS (ppm)</div><div id="tdsGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Salinity Index</div><div id="salinityGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Moisture Stress</div><div id="moistureStressGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Temperature Stress</div><div id="tempStressGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">Soil Organic Proxy (%)</div><div id="soilOrganicGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">DHT Temperature (°C)</div><div id="dhtTempGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">DHT Humidity (%)</div><div id="dhtHumidityGauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">MQ2 Gas (ppm)</div><div id="mq2Gauge"></div></div>
+  <div class="gauge-card"><div class="gauge-title">LDR Light (lux)</div><div id="ldrGauge"></div></div>
 </div>
 
-<div id="mapContainer">
-  <iframe id="fieldMap" loading="lazy" allowfullscreen
-    src="https://www.google.com/maps?q=20.5937,78.9629&z=10&output=embed"
-    style="width:100%;height:100%;border:0;"></iframe>
+<div class="map-container">
+  <iframe id="fieldMap" loading="lazy" allowfullscreen 
+    src="https://www.google.com/maps?q=20.5937,78.9629&z=10&output=embed" 
+    title="Field Location"></iframe>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-  import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+  import { app, db } from './firebase-config.js';
+  import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-  // ---------- Firebase config ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyD7YHaxjiMaPXsWuGiQHO4ElY2SST7K_hw",
-    authDomain: "bhumicare-b6713.firebaseapp.com",
-    databaseURL: "https://bhumicare-b6713-default-rtdb.firebaseio.com",
-    projectId: "bhumicare-b6713",
-    storageBucket: "bhumicare-b6713.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef123456"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  // ---------- Sensor IDs & display names ----------
-  const sensors = [
-    {id:'moistureNPK', label:'Soil Moisture (%)', min:0, max:100},
-    {id:'tempNPK', label:'Soil Temp (°C)', min:0, max:50},
-    {id:'ec', label:'EC (µS/cm)', min:0, max:2000},
-    {id:'N', label:'Nitrogen (ppm)', min:0, max:200},
-    {id:'P', label:'Phosphorus (ppm)', min:0, max:100},
-    {id:'K', label:'Potassium (ppm)', min:0, max:100},
-    {id:'fertilityIndex', label:'Fertility Index', min:0, max:100},
-    {id:'TDS', label:'TDS (ppm)', min:0, max:1000},
-    {id:'salinityIndex', label:'Salinity Index', min:0, max:100},
-    {id:'moistureStress', label:'Moisture Stress', min:0, max:100},
-    {id:'tempStress', label:'Temperature Stress', min:0, max:100},
-    {id:'soilOrganicProxy', label:'Soil Organic Proxy', min:0, max:10},
-    {id:'pH', label:'pH Level', min:0, max:14},
-    {id:'temperatureDHT', label:'DHT Temp (°C)', min:0, max:50},
-    {id:'humidityDHT', label:'DHT Humidity (%)', min:0, max:100},
-    {id:'mq2Raw', label:'MQ2 Gas (ppm)', min:0, max:500},
-    {id:'ldrRaw', label:'LDR Light (lux)', min:0, max:1000},
-    {id:'soilMoistureRaw', label:'Soil Moisture Analog', min:0, max:4095}
-  ];
-
-  // ---------- Create cards dynamically ----------
-  const container = document.getElementById('gaugesContainer');
-  const gauges = {};
-  sensors.forEach(s=>{
-    const card = document.createElement('div');
-    card.className = 'card';
-    container.appendChild(card);
-    gauges[s.id] = new RadialGauge({
-      renderTo: document.getElementById(`${s.id}Gauge`),
-      width:180, height:180,
-      units: '',
-      minValue:s.min, maxValue:s.max,
-      majorTicks:[s.min, (s.min+s.max)/2, s.max],
-      minorTicks:4,
-      strokeTicks:true,
-      highlights:[{from:s.min, to:(s.min+s.max)/3, color:'#d32f2f'},
-                  {from:(s.min+s.max)/3, to:2*(s.min+s.max)/3, color:'#fbc02d'},
-                  {from:2*(s.min+s.max)/3, to:s.max, color:'#4caf50'}],
-      colorPlate:'#f5f5f5', colorMajorTicks:'#1b5e20', colorMinorTicks:'#607d8b',
-      colorNumbers:'#1b5e20', colorNeedle:'#d32f2f', colorNeedleEnd:'#d32f2f',
-      animationDuration:400, animationRule:'linear'
-    }).draw();
-  });
-
-  const checkAlert=(val,minSafe,maxSafe,alertId)=>{
-    const el = document.getElementById(alertId);
-    if(!el) return;
-    el.style.display = (val<minSafe || val>maxSafe)?'inline':'none';
-  };
-
-  // ---------- Firebase live updates ----------
-  const sensorRef = ref(db,'/SensorData');
-  onChildAdded(sensorRef,snap=>{
-    const data = snap.val();
-    if(!data) return;
-
-    // Update each gauge & alert
-    sensors.forEach(s=>{
-      if(data[s.id]!=null){
-        gauges[s.id].value = data[s.id];
-        // You can set your own alert ranges here
-        checkAlert(data[s.id], s.min+(s.max-s.min)*0.2, s.max-(s.max-s.min)*0.2, s.id+'Alert');
-      }
+  // Highcharts solid gauge creator
+  const createGauge = (id, min, max, unit) => {
+    return Highcharts.chart(id, {
+      chart: { type: 'solidgauge', backgroundColor:'transparent' },
+      title: null,
+      pane: { center:['50%','50%'], size:'90%', startAngle:-90, endAngle:90,
+        background:{ backgroundColor:'#22223b', innerRadius:'60%', outerRadius:'100%', shape:'arc' } },
+      tooltip: { enabled:false },
+      yAxis: {
+        min:min,
+        max:max,
+        stops:[[0.1,'#ff0000'],[0.5,'#f7c600'],[0.9,'#00ff99']],
+        lineWidth:0, tickWidth:0, minorTickInterval:null,
+        labels:{ y:16, style:{ color:'#00ffd5', fontSize:'16px' } }
+      },
+      plotOptions:{
+        solidgauge:{ dataLabels:{ y:0, borderWidth:0, useHTML:true,
+          format:`<div style="text-align:center"><span style="font-size:22px;color:#00ffd5">{y}</span><br/><span style="font-size:14px;color:#aaa">${unit}</span></div>` } }
+      },
+      series:[{ name:id, data:[0] }]
     });
+  };
 
-    // Update map
-    if(data.gpsLat!=null && data.gpsLng!=null){
-      document.getElementById('fieldMap').src = `https://www.google.com/maps?q=${data.gpsLat},${data.gpsLng}&z=15&output=embed`;
+  // Initialize all gauges
+  const gauges = {
+    soilMoisture: createGauge('soilMoistureGauge',0,100,'%'),
+    temperature: createGauge('temperatureGauge',0,50,'°C'),
+    humidity: createGauge('humidityGauge',0,100,'%'),
+    ec: createGauge('ecGauge',0,5,'dS/m'),
+    ph: createGauge('phGauge',0,14,'pH'),
+    fertility: createGauge('fertilityGauge',0,100,'Index'),
+    N: createGauge('nGauge',0,200,'ppm'),
+    P: createGauge('pGauge',0,100,'ppm'),
+    K: createGauge('kGauge',0,100,'ppm'),
+    TDS: createGauge('tdsGauge',0,1000,'ppm'),
+    salinity: createGauge('salinityGauge',0,100,'Index'),
+    moistureStress: createGauge('moistureStressGauge',0,100,'Index'),
+    tempStress: createGauge('tempStressGauge',0,100,'Index'),
+    soilOrganic: createGauge('soilOrganicGauge',0,10,'%'),
+    dhtTemp: createGauge('dhtTempGauge',0,50,'°C'),
+    dhtHumidity: createGauge('dhtHumidityGauge',0,100,'%'),
+    mq2: createGauge('mq2Gauge',0,500,'ppm'),
+    ldr: createGauge('ldrGauge',0,1000,'lux')
+  };
+
+  // Firebase realtime update
+  const sensorsRef = ref(db,'SensorData');
+  onValue(sensorsRef, snapshot=>{
+    const data = snapshot.val(); if(!data) return;
+    const keys = Object.keys(data);
+    const latest = data[keys[keys.length-1]];
+
+    gauges.soilMoisture.series[0].points[0].update(latest.moistureNPK || 0);
+    gauges.temperature.series[0].points[0].update(latest.tempNPK || 0);
+    gauges.humidity.series[0].points[0].update(latest.humidityDHT || 0);
+    gauges.ec.series[0].points[0].update(latest.ec || 0);
+    gauges.ph.series[0].points[0].update(latest.pH || 0);
+    gauges.fertility.series[0].points[0].update(latest.fertilityIndex || 0);
+    gauges.N.series[0].points[0].update(latest.N || 0);
+    gauges.P.series[0].points[0].update(latest.P || 0);
+    gauges.K.series[0].points[0].update(latest.K || 0);
+    gauges.TDS.series[0].points[0].update(latest.TDS || 0);
+    gauges.salinity.series[0].points[0].update(latest.salinityIndex || 0);
+    gauges.moistureStress.series[0].points[0].update(latest.moistureStress || 0);
+    gauges.tempStress.series[0].points[0].update(latest.tempStress || 0);
+    gauges.soilOrganic.series[0].points[0].update(latest.soilOrganicProxy || 0);
+    gauges.dhtTemp.series[0].points[0].update(latest.temperatureDHT || 0);
+    gauges.dhtHumidity.series[0].points[0].update(latest.humidityDHT || 0);
+    gauges.mq2.series[0].points[0].update(latest.mq2Raw || 0);
+    gauges.ldr.series[0].points[0].update(latest.ldrRaw || 0);
+
+    if(latest.gpsLat && latest.gpsLng){
+      document.getElementById('fieldMap').src = `https://www.google.com/maps?q=${latest.gpsLat},${latest.gpsLng}&z=15&output=embed`;
     }
   });
 
 </script>
 </body>
 </html>
-
