@@ -130,7 +130,7 @@ const ids = [
 ];
 
 // Example crop suggestions (same as before, 5 per crop)
-const cropSuggestions = {
+const cropSuggestions = [
   { name: 'Rice', suggestions: ['Maintain soil moisture 70-80%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate if soil moisture <35%', 'Check for pests regularly'] },
     { name: 'Wheat', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7.5', 'Irrigate if soil moisture <30%', 'Ensure crop rotation'] },
     { name: 'Maize', suggestions: ['Maintain soil moisture 65-75%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate if soil moisture <40%', 'Check for pest infestations'] },
@@ -237,7 +237,7 @@ const cropSuggestions = {
     { name: 'Celery', suggestions: ['Maintain soil moisture 60-70%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Ensure proper spacing'] },
     { name: 'Asparagus', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer appropriately', 'Monitor pH 6-7', 'Irrigate as needed', 'Support shoots if needed'] },
     { name: 'Artichoke', suggestions: ['Maintain soil moisture 50-60%', 'Apply NPK fertilizer as per stage', 'Monitor pH 6-7', 'Irrigate regularly', 'Protect from pests'] }
-};
+];
 
 // Fetch sensor data from Firebase
 async function fetchData() {
@@ -280,3 +280,4 @@ setInterval(fetchData, 10000); // Every 10 sec
 
 </body>
 </html>
+
