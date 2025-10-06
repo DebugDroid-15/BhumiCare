@@ -80,7 +80,6 @@ header { text-align:center; padding:20px 0; background:#2e7d32; color:white; fon
   sensors.forEach(s=>{
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `<h2>${s.label}</h2><span class="alert" id="${s.id}Alert">⚠️</span><canvas id="${s.id}Gauge" width="180" height="180"></canvas>`;
     container.appendChild(card);
     gauges[s.id] = new RadialGauge({
       renderTo: document.getElementById(`${s.id}Gauge`),
@@ -129,3 +128,4 @@ header { text-align:center; padding:20px 0; background:#2e7d32; color:white; fon
 </script>
 </body>
 </html>
+
